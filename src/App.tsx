@@ -1,13 +1,11 @@
 import { Button } from "./components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/card";
-import { Progress } from "@/components/ui/progress"
 import React from "react"
-import { motion } from "motion/react"
-
+import { Toaster, toast } from 'sonner'
+import { Separator } from "@/components/ui/separator"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -17,6 +15,8 @@ import { Input } from "@/components/ui/input"
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { ArrowUp } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 const formSchema = z.object({
   betAmount: z.coerce.number().min(1).max(1000),
@@ -49,14 +49,23 @@ export default function App() {
 
     // Win if number > winThreshold
     const isWin = randomNum > winThreshold;
-    setTimeout(() => {
-      setGameResult(isWin ? 'win' : 'loss');
-      // Calculate payout based on probability
-      const multiplier = 100 / (100 - winThreshold);
-      const payout = isWin ? betAmount * multiplier : -betAmount;
-      setBalance(prev => prev + payout);
-      setIsAnimating(false);
-    }, 2000);
+    setGameResult(isWin ? 'win' : 'loss');
+    // Calculate payout based on probability
+    const multiplier = 100 / (100 - winThreshold);
+    const payout = isWin ? betAmount * multiplier : -betAmount;
+    setBalance(prev => prev + payout);
+    setIsAnimating(false);
+
+    // Show toast notification
+    if (isWin) {
+      toast.success(`✅ You Won $${(betAmount * multiplier).toFixed(2)}`, {
+        duration: 3000,
+      });
+    } else {
+      toast.error(`❌ You Lost $${betAmount.toFixed(2)}`, {
+        duration: 3000,
+      });
+    }
   }
 
   const winChance = 100 - winThreshold;
@@ -65,84 +74,180 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-background flex flex-col">
+      <Toaster position="top-center" richColors />
       {/* Navbar */}
-      <div className="w-full border-b">
+      <div className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto py-4 px-6 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Dice Game</h1>
-          <div className="flex items-center gap-4">
+          <motion.h1 
+            className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/50 text-transparent bg-clip-text"
+            animate={{ 
+              backgroundSize: ["100% 100%", "200% 100%"],
+              backgroundPosition: ["0% 0%", "100% 0%"]
+            }}
+            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+          >
+            Dice Game
+          </motion.h1>
+          <motion.div 
+            className="flex items-center gap-4 px-6 py-3 rounded-full bg-primary/10 border border-primary/20 shadow-lg shadow-primary/5"
+            whileHover={{ scale: 1.02, boxShadow: "0 8px 32px -8px rgba(var(--primary), 0.2)" }}
+            whileTap={{ scale: 0.98 }}
+          >
             <span className="text-muted-foreground">Balance:</span>
-            <span className="text-xl font-bold">${balance.toFixed(2)}</span>
-          </div>
+            <motion.span 
+              key={balance}
+              initial={{ scale: 1.2, color: gameResult === 'win' ? '#22c55e' : '#ef4444' }}
+              animate={{ scale: 1, color: 'white' }}
+              className="text-2xl font-bold"
+            >
+              ${balance.toFixed(2)}
+            </motion.span>
+          </motion.div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-6">
-        <Card className="w-[90%] p-8">
-          <div className="grid grid-cols-3 gap-8">
-            {/* Form Column */}
-            <div className="col-span-1">
+        <Card className="w-[95%] max-w-7xl p-8 shadow-2xl border-primary/20 bg-background/50 backdrop-blur-sm">
+          <div className="grid grid-cols-12 gap-8">
+            {/* Form Column - 1/3 width */}
+            <div className="col-span-12 md:col-span-4 space-y-6">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <CardHeader className="px-0 pt-0">
-                    <CardTitle className="text-2xl font-bold">Place Your Bet</CardTitle>
-                    <CardDescription>Enter amount and try your luck</CardDescription>
-                  </CardHeader>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <CardHeader className="px-0 pt-0">
+                      <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/50 text-transparent bg-clip-text">Place Your Bet</CardTitle>
+                      <CardDescription>Enter amount and try your luck</CardDescription>
+                    </CardHeader>
+                  </motion.div>
                   <CardContent className="px-0">
-                    <FormField
-                      control={form.control}
-                      name="betAmount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Bet Amount</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter amount" 
-                              {...field} 
-                              type="number"
-                              className="h-12 text-lg" 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="mt-4">
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Win Chance: {winChance}%</span>
-                        <span>Potential Win: ${potentialPayout.toFixed(2)}</span>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className="relative"
+                    >
+                      <FormField
+                        control={form.control}
+                        name="betAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium">Bet Amount</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input 
+                                  placeholder="Enter amount" 
+                                  {...field} 
+                                  type="number"
+                                  className="h-12 text-lg pl-8 bg-background/50 backdrop-blur-sm border-primary/20 shadow-lg" 
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/50">$</span>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+                    <motion.div 
+                      className="mt-6 p-4 rounded-lg border border-primary/20 bg-primary/5"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.3 }}
+                    >
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Win Chance:</span>
+                          <motion.span 
+                            className="font-bold text-primary"
+                            key={winChance}
+                            initial={{ scale: 1.2 }}
+                            animate={{ scale: 1 }}
+                          >
+                            {winChance}%
+                          </motion.span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Potential Payout:</span>
+                          <motion.span 
+                            className="font-bold text-primary"
+                            key={potentialPayout}
+                            initial={{ scale: 1.2 }}
+                            animate={{ scale: 1 }}
+                          >
+                            ${potentialPayout.toFixed(2)}
+                          </motion.span>
+                        </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </CardContent>
                   <CardFooter className="px-0 pb-0">
-                    <Button 
-                      type="submit" 
-                      className="w-full h-12 text-lg font-semibold"
-                      disabled={isAnimating}
+                    <motion.div 
+                      className="w-full"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      {isAnimating ? "Rolling..." : "Place Bet"}
-                    </Button>
+                      <Button 
+                        type="submit" 
+                        className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/20"
+                        disabled={isAnimating}
+                      >
+                        {isAnimating ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="mr-2"
+                          >
+                            ⚀
+                          </motion.div>
+                        ) : null}
+                        {isAnimating ? "Rolling..." : "Place Bet"}
+                      </Button>
+                    </motion.div>
                   </CardFooter>
                 </form>
               </Form>
             </div>
 
-            {/* Game Column */}
-            <div className="col-span-2 flex items-center">
-              <div className="w-full space-y-6">
+            <Separator orientation="vertical" className="mx-auto h-full hidden md:block bg-primary/30" />
+
+            {/* Game Column - 2/3 width */}
+            <div className="col-span-12 md:col-span-7 flex items-center">
+              <div className="w-full space-y-8">
                 <div className="relative">
                   {/* Progress Bar */}
-                  <div className="flex items-center gap-4">
+                  <motion.div 
+                    className="flex items-center gap-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                  >
                     <div className="flex-1">
-                      <div className="relative h-8">
-                        <div 
-                          className="absolute inset-0 bg-red-500/70 rounded-full"
-                        />
-                        <div 
-                          className="absolute inset-0 bg-green-500/70 rounded-full"
+                      <div className="relative h-12 rounded-lg overflow-hidden shadow-lg">
+                        <div className="absolute inset-0 bg-[#ff4444]/80 backdrop-blur-sm" />
+                        <motion.div 
+                          className="absolute inset-0 bg-[#00c853]/80 backdrop-blur-sm"
                           style={{ 
                             width: `${100 - winThreshold}%`,
                             left: `${winThreshold}%`
+                          }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                          animate={{
+                            x: ['-100%', '100%']
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "linear"
                           }}
                         />
                         <input 
@@ -154,6 +259,10 @@ export default function App() {
                           className="absolute inset-0 opacity-0 cursor-pointer"
                         />
                       </div>
+                      <div className="flex justify-between mt-3 text-sm font-medium">
+                        <span className="text-red-400">Loss Zone</span>
+                        <span className="text-green-400">Win Zone</span>
+                      </div>
                       <div className="flex justify-between mt-2 text-sm text-muted-foreground">
                         <span>0</span>
                         <span>25</span>
@@ -162,30 +271,55 @@ export default function App() {
                         <span>100</span>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Animated Arrow */}
-                  {result !== null && (
-                    <div 
-                      className={`absolute top-full transition-all duration-1000 ease-in-out`}
-                      style={{ 
-                        left: `${result}%`,
-                        transform: `translateX(-50%) translateY(10px)`
-                      }}
-                    >
-                      <div className="text-primary text-4xl">↑</div>
-                      <div className="text-center text-lg font-bold">{result}</div>
-                    </div>
-                  )}
-
-                  {/* Result Display */}
-                  {gameResult && (
-                    <div className={`mt-4 text-center text-xl font-bold ${
-                      gameResult === 'win' ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {gameResult === 'win' ? 'You Won!' : 'You Lost!'}
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {result !== null && (
+                      <motion.div 
+                        className="absolute top-full"
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 10, opacity: 1 }}
+                        exit={{ y: 50, opacity: 0 }}
+                        style={{ 
+                          left: `${result}%`,
+                          transform: `translateX(-50%)`
+                        }}
+                      >
+                        <motion.div 
+                          className="flex flex-col items-center gap-2"
+                          animate={{ y: [0, -2, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                          <div className="relative">
+                            <motion.div 
+                              className="absolute inset-0 bg-primary/20 rounded-full"
+                              animate={{ 
+                                scale: [1, 1.1, 1],
+                                opacity: [0.5, 1, 0.5]
+                              }}
+                              transition={{ 
+                                duration: 1.5, 
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            />
+                            <div className="relative z-10 bg-primary rounded-full p-2 shadow-lg shadow-primary/20">
+                              <ArrowUp className="w-8 h-8 text-background" />
+                            </div>
+                          </div>
+                          <motion.div 
+                            className="text-center font-bold text-xl bg-primary/10 px-4 py-2 rounded-full border border-primary/20"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          >
+                            {result}
+                          </motion.div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
