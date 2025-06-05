@@ -1,5 +1,5 @@
-import { Button } from "./components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/card";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import React from "react"
 import { Toaster, toast } from 'sonner'
 import { Separator } from "@/components/ui/separator"
@@ -17,12 +17,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { ArrowUp } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import useAmountStore from "@/store/amount.store"
 
 const formSchema = z.object({
   betAmount: z.coerce.number().min(1).max(1000),
 })
 
-export default function App() {
+export default function DiceGame() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -30,7 +31,7 @@ export default function App() {
     },
   })
 
-  const [balance, setBalance] = React.useState(1000);
+  const { balance, addToBalance, subtractFromBalance } = useAmountStore()
   const [isAnimating, setIsAnimating] = React.useState(false);
   const [result, setResult] = React.useState<number | null>(null);
   const [gameResult, setGameResult] = React.useState<'win' | 'loss' | null>(null);
@@ -52,20 +53,23 @@ export default function App() {
     setGameResult(isWin ? 'win' : 'loss');
     // Calculate payout based on probability
     const multiplier = 100 / (100 - winThreshold);
-    const payout = isWin ? betAmount * multiplier : -betAmount;
-    setBalance(prev => prev + payout);
-    setIsAnimating(false);
-
-    // Show toast notification
+    const payout = betAmount * multiplier;
+    
     if (isWin) {
-      toast.success(`✅ You Won $${(betAmount * multiplier).toFixed(2)}`, {
+      addToBalance(payout);
+      toast.success(`✅ You Won $${payout.toFixed(2)}`, {
         duration: 3000,
       });
     } else {
+      subtractFromBalance(betAmount);
       toast.error(`❌ You Lost $${betAmount.toFixed(2)}`, {
         duration: 3000,
       });
     }
+    
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 1000);
   }
 
   const winChance = 100 - winThreshold;
@@ -73,40 +77,9 @@ export default function App() {
   const potentialPayout = betAmount * (100 / winChance);
 
   return (
-    <div className="w-full min-h-screen bg-background flex flex-col">
+    <div className="w-full min-h-screen bg-background flex flex-col -mt-20">
       <Toaster position="top-center" richColors />
-      {/* Navbar */}
-      <div className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto py-4 px-6 flex justify-between items-center">
-          <motion.h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/50 text-transparent bg-clip-text"
-            animate={{ 
-              backgroundSize: ["100% 100%", "200% 100%"],
-              backgroundPosition: ["0% 0%", "100% 0%"]
-            }}
-            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-          >
-            Dice Game
-          </motion.h1>
-          <motion.div 
-            className="flex items-center gap-4 px-6 py-3 rounded-full bg-primary/10 border border-primary/20 shadow-lg shadow-primary/5"
-            whileHover={{ scale: 1.02, boxShadow: "0 8px 32px -8px rgba(var(--primary), 0.2)" }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <span className="text-muted-foreground">Balance:</span>
-            <motion.span 
-              key={balance}
-              initial={{ scale: 1.2, color: gameResult === 'win' ? '#22c55e' : '#ef4444' }}
-              animate={{ scale: 1, color: 'white' }}
-              className="text-2xl font-bold"
-            >
-              ${balance.toFixed(2)}
-            </motion.span>
-          </motion.div>
-        </div>
-      </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-6">
         <Card className="w-[95%] max-w-7xl p-8 shadow-2xl border-primary/20 bg-background/50 backdrop-blur-sm">
           <div className="grid grid-cols-12 gap-8">
