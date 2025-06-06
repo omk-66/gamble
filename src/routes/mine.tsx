@@ -71,7 +71,7 @@ function MineComponent() {
             const profit = currentWinnings - watchBetAmount
             const multiplier = (currentWinnings / watchBetAmount).toFixed(2)
             addToBalance(currentWinnings)
-            setRevealedCells([...Array(25).keys()]) // Reveal all cells
+            setRevealedCells([...Array(25).keys()]) 
             toast.success(`Cashed out with ${multiplier}x! Profit: $${profit.toFixed(2)}`)
             setGameState('idle')
             setMinePositions([])

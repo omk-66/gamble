@@ -69,7 +69,7 @@ export default function DiceGame() {
     
     setTimeout(() => {
       setIsAnimating(false);
-    }, 1000);
+    }, 300);
   }
 
   const winChance = 100 - winThreshold;
